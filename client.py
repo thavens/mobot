@@ -11,6 +11,7 @@ import datetime
 import sys
 import logging
 import os
+from gpiozero import Servo
 
 ############ Client Options #########
 hole_time = 1 #seconds
@@ -101,6 +102,13 @@ def target(data: Wheels):
 front = Wheels(0, 0)
 thread = Thread(target=target, args=(front,))
 thread.start()
+
+# Servo stuff
+syaw = Servo(19, min_pulse_width=.5/1000, max_pulse_width=2.5/1000, frame_width=20/1000)
+spitch = Servo(12, min_pulse_width=.5/1000, max_pulse_width=2.5/1000, frame_width=20/1000)
+
+syaw.value = 0
+spitch.value = 0
 
 while True:
     try:
