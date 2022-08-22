@@ -49,8 +49,8 @@ brecieve = ['cmd1', 'cmd2', 'speedR_meas', 'speedL_meas', 'batVoltage', 'boardTe
 
 @dataclass
 class Wheels:
-    data_right: int
-    data_left: int
+    data_speed: int
+    data_turn: int
 
 def target(data: Wheels):
     def send(speed, steer):
@@ -94,7 +94,7 @@ def target(data: Wheels):
 
             if itime_send < now:
                 itime_send = now + TIME_SEND
-                send(data.data_left, data.data_right)
+                send(data.data_turn, data.data_speed)
     except:
         logging.getLogger('daemon').exception('Exit due to:')
         sys.exit()
@@ -125,19 +125,16 @@ while True:
             values = [int.from_bytes(msgServer[i:i+2], 'little', signed=True) for i in range(0, len(msgServer), 2)]
 
             #checksum
-            sum = 0
-            for i in values[:-1]:
-                sum ^= i
-            if sum  == values[-1]:
-                front.data_left = int(values[1] / 65.534)
-                front.data_right = int(values[0] / 65.534)
-                print(values[1], front.data_left, values[3], front.data_right)
+            if reduce(lambda x, y: x ^ y, values[:-1]) == values[-1]:
+                front.data_turn = int(values[0] / 65.534)
+                front.data_speed = int(values[1] / 65.534)
+                print(values[1], front.data_turn, values[3], front.data_speed)
             else:
                 print('corrupt data', values[-1])
         else:
             print('no data')
-            front.data_left = 0
-            front.data_right = 0
+            front.data_turn = 0
+            front.data_speed = 0
         
         now = time.time()
     except:
