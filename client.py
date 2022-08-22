@@ -75,11 +75,11 @@ def target(data: Wheels):
 
                 if reduce(lambda x, y: x ^ y, incoming) == checksum:
                     if incoming[5] == 30:
-                        logger.getLogger('daemon').info('Low Battery Exit')
+                        logging.getLogger('daemon').info('Low Battery Exit')
                         sys.exit()
                     if receive.time_log < (now := time.time()):
                         receive.time_log = now + log_interval
-                        logger.getLogger('daemon').info(
+                        logging.getLogger('daemon').info(
                             ' '.join([i + ': ' + j for i, j in zip(brecieve, incoming[1:])])
                         )
 
