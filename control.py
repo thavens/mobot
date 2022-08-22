@@ -25,10 +25,7 @@ class ServerConnection(Thread):
             _, addy = self.udp.recvfrom(1024)
         clock = Clock()
         while True:
-            msg = self.contr.bytes(0) \
-            + self.contr.bytes(1) \
-            + self.contr.bytes(2) \
-            + self.contr.bytes(3) \
+            msg = reduce(lambda x, y: x + y, self.contr.bytes())
             + (reduce(lambda x, y: x ^ y, self.contr)).to_bytes(2, 'little', signed=True)
             self.udp.sendto(msg, addy)
             clock.tick(60)
