@@ -1,4 +1,3 @@
-from distutils.log import info
 import socket
 import time
 import select
@@ -11,8 +10,15 @@ import datetime
 import sys
 import logging
 import os
-from gpiozero import Servo
 
+from video import video_send, audio_send
+try:
+    os.popen('sudo pigpiod')
+    os.environ['GPIOZERO_PIN_FACTORY']='pigpio'
+except:
+    pass
+from gpiozero import Servo
+import math
 ############ Client Options #########
 hole_time = 1 #seconds
 keep_alive = "keep alive"
@@ -101,7 +107,7 @@ def target(data: Wheels):
 
 front = Wheels(0, 0)
 thread = Thread(target=target, args=(front,))
-thread.start()
+#thread.start()
 
 # Servo stuff
 syaw = Servo(19, min_pulse_width=.5/1000, max_pulse_width=2.5/1000, frame_width=20/1000)
@@ -109,6 +115,9 @@ spitch = Servo(12, min_pulse_width=.5/1000, max_pulse_width=2.5/1000, frame_widt
 
 syaw.value = 0
 spitch.value = 0
+
+vsend = video_send()
+asend = audio_send()
 
 while True:
     try:
@@ -128,7 +137,12 @@ while True:
             if reduce(lambda x, y: x ^ y, values[:-1]) == values[-1]:
                 front.data_turn = int(values[0] / 65.534)
                 front.data_speed = int(values[1] / 65.534)
-                print(values[1], front.data_turn, values[3], front.data_speed)
+
+                values[4] = -values[4]
+                speed = .13
+                syaw.value = syaw.value + values[4] * speed if abs(syaw.value + values[4] * speed) <= 1 else values[4]
+                spitch.value = spitch.value + values[5] * speed if abs(spitch.value + values[5] * speed) <= 1 else values[5]
+                
             else:
                 print('corrupt data', values[-1])
         else:
@@ -138,6 +152,10 @@ while True:
         
         now = time.time()
     except:
+        vsend.terminate()
+        asend.terminate()
+        vsend.kill()
+        asend.kill()
         logging.getLogger('socket').exception('Exit due to:')
         sys.exit()
 
