@@ -21,11 +21,13 @@ class ServerConnection(Thread):
         self.udp.bind(("0.0.0.0", port))
     
     def run(self):
-        if DIRECT_SOCKET:
+        if not DIRECT_SOCKET:
+            global addy
+        else:
             _, addy = self.udp.recvfrom(1024)
         clock = Clock()
         while True:
-            msg = reduce(lambda x, y: x + y, self.contr.bytes())
+            msg = reduce(lambda x, y: x + y, self.contr.bytes()) \
             + (reduce(lambda x, y: x ^ y, self.contr)).to_bytes(2, 'little', signed=True)
             self.udp.sendto(msg, addy)
             clock.tick(60)
