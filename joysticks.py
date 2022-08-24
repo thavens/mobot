@@ -30,6 +30,7 @@ class Controller(threading.Thread):
 def get_controller():
     joy_id = 0
     joystick.init()
+    print(joystick.get_init())
     if joystick.get_count() > 1:
         for i in range(joystick.get_count()):
             print(i, joystick.Joystick(i).get_name())
