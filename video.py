@@ -6,8 +6,8 @@ def video_send():
                 -i /dev/video0 \
                 -f mpegts \
                 -r 30 \
-                -b:v 100k \
-                -s 480x320 \
+                -b:v 1M \
+                -s 960x640 \
                 -vcodec h264_v4l2m2m \
                 -preset veryfast \
                 -tune zerolatency \
@@ -16,7 +16,7 @@ def video_send():
     return p
 
 def audio_send():
-    p = popen('''ffmpeg -f alsa -ac 1 -i hw:HD3000 -b:a 32k -preset veryfast -tune zerolatency udp://192.168.1.18:12346''')
+    p = popen('''ffmpeg -f alsa -ac 1 -i hw:HD3000 -acodec mp2 -ab 32k -f wav udp://192.168.1.18:12346''')
     return p
 
 def video_listen():
@@ -42,8 +42,14 @@ if __name__ == '__main__':
             sleep(1000)
     finally:
         if inp == 's' or inp == 'l':
-            p1.terminate()
-            p2.terminate()
-            p1.kill()
-            p2.kill()
+            try:
+                p1.terminate()
+                p2.terminate()
+            except:
+                pass
+            try:
+                p1.kill()
+                p2.kill()
+            except:
+                pass
     

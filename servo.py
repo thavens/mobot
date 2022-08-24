@@ -15,5 +15,5 @@ servo.value = 0
 servo1.value = 0
 while True:                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
     contr.run()
-    servo.value += contr[4] * 0.06535947712
-    servo1.value += contr[5] * 0.06535947712
+    #servo.value += contr[4] * 0.06535947712
+    #servo1.value += contr[5] * 0.06535947712
