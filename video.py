@@ -2,16 +2,16 @@ from os import popen
 from time import sleep
 
 def video_send():
-    p = popen('''ffmpeg -f v4l2 
-                -i /dev/video0
-                -f mpegts
-                -r 30 
-                -b:v 100k 
-                -s 480x320 
-                -vcodec h264_v4l2m2m
-                -preset veryfast 
-                -tune zerolatency 
-                -bf 0 
+    p = popen('''ffmpeg -f v4l2 \
+                -i /dev/video0 \
+                -f mpegts \
+                -r 30 \
+                -b:v 100k \
+                -s 480x320 \
+                -vcodec h264_v4l2m2m \
+                -preset veryfast \
+                -tune zerolatency \
+                -bf 0 \
                 udp://192.168.1.18:12345''')
     return p
 
@@ -20,12 +20,12 @@ def audio_send():
     return p
 
 def video_listen():
-    p = popen('''mpv --no-cache --untimed --no-demuxer-thread --video-sync=audio
+    p = popen('''mpv --no-cache --untimed --no-demuxer-thread --video-sync=audio \
                  --vd-lavc-threads=1 udp://192.168.1.19:12345''')
     return p
 
 def audio_listen():
-    p = popen('''mpv --no-cache --untimed --no-demuxer-thread --video-sync=audio
+    p = popen('''mpv --no-cache --untimed --no-demuxer-thread --video-sync=audio \
                  --vd-lavc-threads=1 udp://192.168.1.19:12346''')
     return p
 
