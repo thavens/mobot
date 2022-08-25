@@ -10,6 +10,7 @@ import datetime
 import sys
 import logging
 import os
+from serial.serialutil import SerialException
 
 from video import video_send, audio_send
 try:
@@ -53,20 +54,31 @@ future = now
 ################################################### Daemon Setup ############################################
 brecieve = ['cmd1', 'cmd2', 'speedR_meas', 'speedL_meas', 'batVoltage', 'boardTemp']
 
-@dataclass
-class Wheels:
-    data_speed: int
-    data_turn: int
 
-def target(data: Wheels):
-    def send(speed, steer):
+class Wheels(Thread):
+    def __init__(self):
+        super(Wheels, self).__init__()
+        self.data_turn = 0
+        self.data_speed = 0
+        self.time_log = 0
+
+        failed = 1
+        while failed:
+            try:
+                self.front = serial.Serial('/dev/ttyUSB0', baudrate=115200, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE)
+                failed = 0
+            except SerialException:
+                print('serial connection retry in 5s')
+                time.sleep(5)
+
+    def send(self):
         msg = START_FRAME.to_bytes(2, 'little') \
-            + steer.to_bytes(2, 'little', signed=True) \
-            + speed.to_bytes(2, 'little', signed=True) \
-            + ct.c_uint16(START_FRAME ^ steer ^ speed).value.to_bytes(2, 'little')
-        front.write(msg)
+            + self.data_turn.to_bytes(2, 'little', signed=True) \
+            + self.data_speed.to_bytes(2, 'little', signed=True) \
+            + ct.c_uint16(START_FRAME ^ self.data_turn ^ self.data_speed).value.to_bytes(2, 'little')
+        self.front.write(msg)
 
-    def receive():
+    def receive(self):
         if front.in_waiting:
             data = front.read_all()
             if len(data) == 18:
@@ -84,30 +96,27 @@ def target(data: Wheels):
                     if incoming[5] == 30:
                         logging.getLogger('daemon').info('Low Battery Exit')
                         sys.exit()
-                    if receive.time_log < (now := time.time()):
-                        receive.time_log = now + log_interval
+                    if self.time_log < (now := time.time()):
+                        self.time_log = now + log_interval
                         logging.getLogger('daemon').info(
                             ' '.join([i + ': ' + j for i, j in zip(brecieve, incoming[1:])])
                         )
+    def run(self):
+        try:
+            itime_send = 0
+            while True:
+                now = time.time()
+                self.receive()
 
-    try:
-        front = serial.Serial('/dev/ttyUSB0', baudrate=115200, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE)
-        itime_send = 0
-        receive.time_log = 0
-        while True:
-            now = time.time()
-            receive()
+                if itime_send < now:
+                    itime_send = now + TIME_SEND
+                    self.send()
+        except:
+            logging.getLogger('daemon').exception('Exit due to:')
+            sys.exit()
 
-            if itime_send < now:
-                itime_send = now + TIME_SEND
-                send(data.data_turn, data.data_speed)
-    except:
-        logging.getLogger('daemon').exception('Exit due to:')
-        sys.exit()
-
-front = Wheels(0, 0)
-thread = Thread(target=target, args=(front,))
-#thread.start()
+wheels = Wheels()
+wheels.start()
 
 # Servo stuff
 syaw = Servo(19, min_pulse_width=.5/1000, max_pulse_width=2.5/1000, frame_width=20/1000)
@@ -135,8 +144,8 @@ while True:
 
             #checksum
             if reduce(lambda x, y: x ^ y, values[:-1]) == values[-1]:
-                front.data_turn = int(values[0] / 65.534)
-                front.data_speed = int(values[1] / 65.534)
+                wheels.data_turn = int(values[0] / 65.534)
+                wheels.data_speed = int(values[1] / 65.534)
 
                 values[4] = -values[4]
                 speed = .13
@@ -147,11 +156,13 @@ while True:
                 print('corrupt data', values[-1])
         else:
             print('no data')
-            front.data_turn = 0
-            front.data_speed = 0
+            wheels.data_turn = 0
+            wheels.data_speed = 0
         
         now = time.time()
     except:
+        wheels.data_turn = 0
+        wheels.data_speed = 0
         vsend.terminate()
         asend.terminate()
         vsend.kill()
