@@ -12,11 +12,13 @@ import os
 from joysticks import get_controller
 from functools import reduce
 import traceback
+from options import DIRECT_SOCKET
 from video import video_listen, audio_listen
 from typing import Tuple
+import options
 
-DIRECT_SOCKET = False # don't use the forwarding server?
-VIDEO = False # Use webcam?
+DIRECT_SOCKET = options.DIRECT_SOCKET
+VIDEO = options.VIDEO
 
 @dataclass
 class Addy(threading.Event):

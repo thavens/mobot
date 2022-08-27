@@ -13,8 +13,9 @@ import os
 from serial.serialutil import SerialException
 
 from video import video_send, audio_send
+import options
 
-VIDEO = False # Use webcam? Identical option in control.py
+VIDEO = options.VIDEO # Use webcam? Identical option in control.py
 
 try:
     os.popen('sudo pigpiod')

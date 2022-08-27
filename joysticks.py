@@ -1,5 +1,10 @@
 from pygame import joystick, time
 import threading
+import math
+import options
+
+def clamp(input:float) -> int:
+    return int(input) if abs(input) > 1000 else math.copysign(1000, input)
 
 class Controller(threading.Thread):
     def __init__(self, id, *args, **kwargs):
@@ -12,7 +17,7 @@ class Controller(threading.Thread):
         clock = time.Clock()
         while 1:
             self.joy.init()
-            self.values = [int(self.joy.get_axis(i) * 32767) for i in range(self.joy.get_numaxes())]
+            self.values = [clamp(self.joy.get_axis(i) * 1000 * options.SPEEDRATIO) for i in range(self.joy.get_numaxes())]
             self.hat = self.joy.get_hat(0)
             self.joy.quit()
             clock.tick(60)
