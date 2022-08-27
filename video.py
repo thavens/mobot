@@ -21,17 +21,17 @@ def audio_send():
 
 def video_listen():
     p = popen('''mpv --no-cache --untimed --no-demuxer-thread --video-sync=audio \
-                 --vd-lavc-threads=1 udp://192.168.1.19:12345''')
+                 --vd-lavc-threads=1 --profile=low-latency udp://192.168.1.19:12345''')
     return p
 
 def audio_listen():
     p = popen('''mpv --no-cache --untimed --no-demuxer-thread --video-sync=audio \
-                 --vd-lavc-threads=1 udp://192.168.1.19:12346''')
+                 --vd-lavc-threads=1 --profile=low-latency udp://192.168.1.19:12346''')
     return p
 
 if __name__ == '__main__':
     try:
-        inp = input("send or listen").lower()[0]
+        inp = input("send or listen? ").lower()[0]
         if inp == 's':
             p1 = video_send()
             p2 = audio_send()
