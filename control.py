@@ -16,6 +16,7 @@ from video import video_listen, audio_listen
 from typing import Tuple
 
 DIRECT_SOCKET = False # don't use the forwarding server?
+VIDEO = False # Use webcam?
 
 @dataclass
 class Addy(threading.Event):
@@ -35,22 +36,14 @@ class ServerConnection(Thread):
         self.addy = addy
     
     def run(self):
-        vlisten = video_listen()
-        alisten = audio_listen()
-        try:
-            self.addy.wait()
-            clock = Clock()
-            while True:
-                msg = reduce(lambda x, y: x + y, self.contr.bytes()) \
-                + (reduce(lambda x, y: x ^ y, self.contr)).to_bytes(2, 'little', signed=True)
-                self.udp.sendto(msg, self.addy.address)
-                clock.tick(60)
-        except:
-            vlisten.terminate()
-            alisten.terminate()
-            vlisten.kill()
-            alisten.kill()
-            traceback.print_exc()
+        self.addy.wait()
+        clock = Clock()
+        while True:
+            msg = reduce(lambda x, y: x + y, self.contr.bytes()) \
+            + (reduce(lambda x, y: x ^ y, self.contr)).to_bytes(2, 'little', signed=True)
+            self.udp.sendto(msg, self.addy.address)
+            clock.tick(60)
+            
 
 @dataclass
 class ControlListener(Thread):
@@ -126,20 +119,31 @@ display = Display()
 clock = Clock()
 input_label = 'Input data:'
 robot_data_label = 'Robot data:'
-while display.running:
-    display.reset()
-    display.writeLine(input_label)
-    display.writeLine(', '.join(f'{i}'.rjust(6) for i in ['turn', 'speed', 'N/A', 'N/A', 'Yaw', 'Pitch']))
-    display.writeLine(', '.join(f'{i}'.rjust(6) for i in contr))
-    display.writeLine(robot_data_label)
-    display.writeLine(', '.join(f'{i}'.rjust(6) for i in ['cmd1', 'cmd2', 'speedR_meas', 'speedL_meas', 'batVoltage', 'boardTemp']))
-    display.writeLine(', '.join(f'{i}'.rjust(6) for i in listener.data))
-    display.update()
+try:
+    if VIDEO:
+        vlisten = video_listen()
+        alisten = audio_listen()
+    while display.running:
+        display.reset()
+        display.writeLine(input_label)
+        display.writeLine(', '.join(f'{i}'.rjust(6) for i in ['turn', 'speed', 'N/A', 'N/A', 'Yaw', 'Pitch']))
+        display.writeLine(', '.join(f'{i}'.rjust(6) for i in contr))
+        display.writeLine(robot_data_label)
+        display.writeLine(', '.join(f'{i}'.rjust(6) for i in ['cmd1', 'cmd2', 'speedR_meas', 'speedL_meas', 'batVoltage', 'boardTemp']))
+        display.writeLine(', '.join(f'{i}'.rjust(6) for i in listener.data))
+        display.update()
 
-    if not contr.is_alive():
-        print('PS4 Controller Exit')
-        sys.exit()
-    if not serv.is_alive():
-        print('Socket Exit')
-        sys.exit()
-    clock.tick(30)
+        if not contr.is_alive():
+            print('PS4 Controller Exit')
+            sys.exit()
+        if not serv.is_alive():
+            print('Socket Exit')
+            sys.exit()
+        clock.tick(30)
+except:
+    if VIDEO:
+        vlisten.terminate()
+        alisten.terminate()
+        vlisten.kill()
+        alisten.kill()
+    traceback.print_exc()
