@@ -13,6 +13,9 @@ import os
 from serial.serialutil import SerialException
 
 from video import video_send, audio_send
+
+VIDEO = False # Use webcam? Identical option in control.py
+
 try:
     os.popen('sudo pigpiod')
     os.environ['GPIOZERO_PIN_FACTORY']='pigpio'
@@ -61,11 +64,12 @@ class Wheels(Thread):
         self.data_turn = 0
         self.data_speed = 0
         self.time_log = 0
+        self.control_update_msg = str.encode('info update:', 'ascii')
 
         failed = 1
         while failed:
             try:
-                self.front = serial.Serial('/dev/ttyUSB0', baudrate=115200, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE)
+                self.tty = serial.Serial('/dev/ttyUSB0', baudrate=115200, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE)
                 failed = 0
             except SerialException:
                 print('serial connection retry in 5s')
@@ -76,11 +80,11 @@ class Wheels(Thread):
             + self.data_turn.to_bytes(2, 'little', signed=True) \
             + self.data_speed.to_bytes(2, 'little', signed=True) \
             + ct.c_uint16(START_FRAME ^ self.data_turn ^ self.data_speed).value.to_bytes(2, 'little')
-        self.front.write(msg)
+        self.tty.write(msg)
 
     def receive(self):
-        if front.in_waiting:
-            data = front.read_all()
+        if self.tty.in_waiting:
+            data = self.tty.read_all()
             if len(data) == 18:
                 incoming = [int.from_bytes(data[0:2], 'little', signed=False),
                 int.from_bytes(data[2:4], 'little', signed=True),
@@ -95,12 +99,20 @@ class Wheels(Thread):
                 if reduce(lambda x, y: x ^ y, incoming) == checksum:
                     if incoming[5] == 30:
                         logging.getLogger('daemon').info('Low Battery Exit')
+                        self.propogate(data)
                         sys.exit()
                     if self.time_log < (now := time.time()):
                         self.time_log = now + log_interval
                         logging.getLogger('daemon').info(
                             ' '.join([i + ': ' + j for i, j in zip(brecieve, incoming[1:])])
                         )
+                        self.propogate(data)
+
+    def propogate(self, data):
+        global udp
+        global serveraddy
+        udp.sendto(serveraddy, self.control_update_msg + data)
+
     def run(self):
         try:
             itime_send = 0
@@ -125,11 +137,12 @@ spitch = Servo(12, min_pulse_width=.5/1000, max_pulse_width=2.5/1000, frame_widt
 syaw.value = 0
 spitch.value = 0
 
-vsend = video_send()
-asend = audio_send()
+if VIDEO:
+    vsend = video_send()
+    asend = audio_send()
 
-while True:
-    try:
+try:
+    while True:
         if future <= now:
             udp.sendto(msg_bytes, serveraddy)
             future = now + hole_time
@@ -160,15 +173,16 @@ while True:
             wheels.data_speed = 0
         
         now = time.time()
-    except:
-        wheels.data_turn = 0
-        wheels.data_speed = 0
+except:
+    wheels.data_turn = 0
+    wheels.data_speed = 0
+    if VIDEO:
         vsend.terminate()
         asend.terminate()
         vsend.kill()
         asend.kill()
-        logging.getLogger('socket').exception('Exit due to:')
-        sys.exit()
+    logging.getLogger('socket').exception('Exit due to:')
+    sys.exit()
 
 
 
