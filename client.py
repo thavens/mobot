@@ -28,7 +28,7 @@ import math
 ############ Client Options #########
 hole_time = 1 #seconds
 keep_alive = "client keep alive"
-msg_bytes = str.encode(keep_alive)
+msg_bytes = str.encode(keep_alive, 'ascii')
 serveraddy = (os.getenv('FORWARDING_SERVER'), 25565)
 buffSize = 1024
 #####################################
@@ -159,8 +159,8 @@ try:
 
             #checksum
             if reduce(lambda x, y: x ^ y, values[:-1]) == values[-1]:
-                wheels.data_turn = int(values[0] / 65.534)
-                wheels.data_speed = int(values[1] / 65.534)
+                wheels.data_turn = values[0]
+                wheels.data_speed = values[1]
 
                 values[4] = -values[4]
                 speed = .13

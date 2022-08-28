@@ -92,7 +92,7 @@ class Display:
         self.WHITE = (200, 200, 200)
         pygame.init()
         self.screen = pygame.display.set_mode((640, 240))
-        self.font = pygame.font.SysFont(None, 20)
+        self.font = pygame.font.SysFont('ubuntumono', 20)
         self.running = True
         self.x = 20
         self.y = 20
@@ -114,6 +114,7 @@ class Display:
     def update(self):
         pygame.display.update()
 
+display = Display()
 contr = get_controller()
 udp = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM, proto=socket.IPPROTO_UDP)
 udp.bind(("0.0.0.0", 25565))
@@ -125,7 +126,6 @@ serv = ServerConnection(contr, addy, udp)
 listener.start()
 serv.start()
 
-display = Display()
 clock = Clock()
 input_label = 'Input data:'
 robot_data_label = 'Robot data:'
