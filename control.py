@@ -24,6 +24,11 @@ VIDEO = options.VIDEO
 class Addy(threading.Event):
     address: Tuple[str, int]
 
+    def __init__(self, addy) -> None:
+        super().__init__()
+        self.address = addy
+
+
 if not DIRECT_SOCKET:
     addy = Addy((os.getenv('FORWARDING_SERVER'), 25565)) # forwarding server address
     addy.set()
@@ -32,7 +37,7 @@ else:
 
 class ServerConnection(Thread):
     def __init__(self, controller, addy:Addy, udp:socket.socket):
-        super(ServerConnection, self).__init__(daemon=True)
+        super().__init__(daemon=True)
         self.contr = controller
         self.udp = udp
         self.addy = addy
@@ -52,7 +57,7 @@ class ControlListener(Thread):
     addy: Addy
     udp: socket.socket
     def __init__(self, addy:Addy, udp:socket.socket):
-        super(ControlListener, self).__init__(daemon=True)
+        super().__init__(daemon=True)
         self.addy = addy
         self.udp = udp
         self.propogate_msg_bytes = str.encode('info update:', 'ascii')
@@ -77,6 +82,9 @@ class ControlListener(Thread):
                     self.data = incoming[1:]
                 else:
                     print('got corrupt data from client/forwarding server.')
+    
+    def __eq__(self, other): return self is other
+    def __hash__(self): return hash(id(self))
 
 class Display:
     def __init__(self):
@@ -84,7 +92,7 @@ class Display:
         self.WHITE = (200, 200, 200)
         pygame.init()
         self.screen = pygame.display.set_mode((640, 240))
-        self.font = pygame.font.SysFont('ubuntumono', 20)
+        self.font = pygame.font.SysFont(None, 20)
         self.running = True
         self.x = 20
         self.y = 20
@@ -111,7 +119,7 @@ udp = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM, proto=socket.
 udp.bind(("0.0.0.0", 25565))
 
 # insantiate the listening thread
-listener = ControlListener(addy)
+listener = ControlListener(addy, udp)
 serv = ServerConnection(contr, addy, udp)
 # start the listening thread
 listener.start()

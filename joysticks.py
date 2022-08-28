@@ -4,7 +4,7 @@ import math
 import options
 
 def clamp(input:float) -> int:
-    return int(input) if abs(input) > 1000 else math.copysign(1000, input)
+    return int(input) if abs(input) < 1000 else int(math.copysign(1000, input))
 
 class Controller(threading.Thread):
     def __init__(self, id, *args, **kwargs):
