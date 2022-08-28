@@ -3,6 +3,7 @@ import socket
 import logging
 import sys
 import threading
+import options
 
 ################################ Logger Settings #########################
 logging.basicConfig(filename='client_daemon_log.txt',
@@ -42,10 +43,11 @@ def audio_forwarding():
         if addy[0] == client_address[0]:
             sock.sendto(msg, (control_address[0], 25568))
 
-video = threading.Thread(target=video_forwarding, daemon=True)
-audio = threading.Thread(target=audio_forwarding, daemon=True)
-video.start()
-audio.start()
+if options.VIDEO:
+    video = threading.Thread(target=video_forwarding, daemon=True)
+    audio = threading.Thread(target=audio_forwarding, daemon=True)
+    video.start()
+    audio.start()
 
 
 while True:

@@ -1,8 +1,9 @@
 from os import popen
 from time import sleep
+import os
 
 def video_send():
-    p = popen('''ffmpeg -f v4l2 \
+    p = popen(f'''ffmpeg -f v4l2 \
                 -i /dev/video0 \
                 -f mpegts \
                 -r 30 \
@@ -12,21 +13,21 @@ def video_send():
                 -preset veryfast \
                 -tune zerolatency \
                 -bf 0 \
-                udp://192.168.1.18:12345''')
+                udp://{os.getenv('FORWARDING_SERVER')}:25567''')
     return p
 
 def audio_send():
-    p = popen('''ffmpeg -f alsa -ac 1 -i hw:HD3000 -acodec mp2 -ab 32k -f wav udp://192.168.1.18:12346''')
+    p = popen(f'''ffmpeg -f alsa -ac 1 -i hw:HD3000 -acodec mp2 -ab 32k -f wav udp://{os.getenv('FORWARDING_SERVER')}:25568''')
     return p
 
 def video_listen():
-    p = popen('''mpv --no-cache --untimed --no-demuxer-thread --video-sync=audio \
-                 --vd-lavc-threads=1 --profile=low-latency udp://192.168.1.19:12345''')
+    p = popen(f'''mpv --no-cache --untimed --no-demuxer-thread --video-sync=audio \
+                 --vd-lavc-threads=1 --profile=low-latency udp://0.0.0.0:25567''')
     return p
 
 def audio_listen():
-    p = popen('''mpv --no-cache --untimed --no-demuxer-thread --video-sync=audio \
-                 --vd-lavc-threads=1 --profile=low-latency udp://192.168.1.19:12346''')
+    p = popen(f'''mpv --no-cache --untimed --no-demuxer-thread --video-sync=audio \
+                 --vd-lavc-threads=1 --profile=low-latency udp://0.0.0.0:25568''')
     return p
 
 if __name__ == '__main__':
