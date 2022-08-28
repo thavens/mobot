@@ -17,6 +17,7 @@ import options
 
 VIDEO = options.VIDEO # Use webcam? Identical option in control.py
 
+print(os.environ['FORWARDING_SERVER'])
 try:
     os.popen('sudo pigpiod')
     os.environ['GPIOZERO_PIN_FACTORY']='pigpio'
@@ -105,14 +106,14 @@ class Wheels(Thread):
                     if self.time_log < (now := time.time()):
                         self.time_log = now + log_interval
                         logging.getLogger('daemon').info(
-                            ' '.join([i + ': ' + j for i, j in zip(brecieve, incoming[1:])])
+                            ' '.join([i + ': ' + str(j) for i, j in zip(brecieve, incoming[1:])])
                         )
                         self.propogate(data)
 
     def propogate(self, data):
         global udp
         global serveraddy
-        udp.sendto(serveraddy, self.control_update_msg + data)
+        udp.sendto(self.control_update_msg + data, serveraddy)
 
     def run(self):
         try:
