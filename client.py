@@ -26,7 +26,7 @@ from gpiozero import Servo
 import math
 ############ Client Options #########
 hole_time = 1 #seconds
-keep_alive = "keep alive"
+keep_alive = "client keep alive"
 msg_bytes = str.encode(keep_alive)
 serveraddy = (os.getenv('FORWARDING_SERVER'), 25565)
 buffSize = 1024

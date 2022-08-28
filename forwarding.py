@@ -33,9 +33,11 @@ while True:
         elif bytes == control_msg_bytes:
             if control_address != addy: print('new client address', addy)
             control_address = addy
-        elif len(bytes) > propogate_msg_bytes and bytes[:len(propogate_msg_bytes)] == propogate_msg_bytes:
+        elif len(bytes) > len(propogate_msg_bytes) and bytes[:len(propogate_msg_bytes)] == propogate_msg_bytes:
             server.sendto(bytes, control_address)
         else:
+            if control_address != addy: print('new client address', addy)
+            control_address = addy
             server.sendto(bytes, client_address)
     except:
         logging.exception('Exit due to:')
