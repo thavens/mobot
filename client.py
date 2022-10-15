@@ -18,12 +18,13 @@ import options
 VIDEO = options.VIDEO # Use webcam? Identical option in control.py
 
 print(os.environ['FORWARDING_SERVER'])
-try:
-    os.popen('sudo pigpiod')
-    os.environ['GPIOZERO_PIN_FACTORY']='pigpio'
-except:
-    pass
-from gpiozero import Servo
+if VIDEO:
+    try:
+        os.popen('sudo pigpiod')
+        os.environ['GPIOZERO_PIN_FACTORY']='pigpio'
+    except:
+        pass
+    from gpiozero import Servo
 import math
 ############ Client Options #########
 hole_time = 1 #seconds
@@ -132,12 +133,13 @@ class Wheels(Thread):
 wheels = Wheels()
 wheels.start()
 
-# Servo stuff
-syaw = Servo(19, min_pulse_width=.5/1000, max_pulse_width=2.5/1000, frame_width=20/1000)
-spitch = Servo(12, min_pulse_width=.5/1000, max_pulse_width=2.5/1000, frame_width=20/1000)
+if VIDEO:
+    # Servo stuff
+    syaw = Servo(19, min_pulse_width=.5/1000, max_pulse_width=2.5/1000, frame_width=20/1000)
+    spitch = Servo(12, min_pulse_width=.5/1000, max_pulse_width=2.5/1000, frame_width=20/1000)
 
-syaw.value = 0
-spitch.value = 0
+    syaw.value = 0
+    spitch.value = 0
 
 if VIDEO:
     vsend = video_send()
@@ -164,8 +166,9 @@ try:
 
                 values[4] = -values[4]
                 speed = .13
-                syaw.value = syaw.value + values[4] * speed if abs(syaw.value + values[4] * speed) <= 1 else values[4]
-                spitch.value = spitch.value + values[5] * speed if abs(spitch.value + values[5] * speed) <= 1 else values[5]
+                if VIDEO:
+                    syaw.value = syaw.value + values[4] * speed if abs(syaw.value + values[4] * speed) <= 1 else values[4]
+                    spitch.value = spitch.value + values[5] * speed if abs(spitch.value + values[5] * speed) <= 1 else values[5]
                 
             else:
                 print('corrupt data', values[-1])

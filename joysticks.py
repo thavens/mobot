@@ -18,6 +18,7 @@ class Controller(threading.Thread):
         while 1:
             self.joy.init()
             self.values = [clamp(self.joy.get_axis(i) * 1000 * options.SPEEDRATIO) for i in range(self.joy.get_numaxes())]
+            self.values[1] = -self.values[1]
             self.hat = self.joy.get_hat(0)
             self.joy.quit()
             clock.tick(60)
