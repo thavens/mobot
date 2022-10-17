@@ -129,6 +129,12 @@ class Wheels(Thread):
         except:
             logging.getLogger('daemon').exception('Exit due to:')
             sys.exit()
+    
+    def set_speed(self, speed, alpha_s=0.2):
+        self.data_speed = self.data_speed * (1 - alpha_s) + alpha_s * speed
+    
+    def set_turn(self, turn, alpha_t=0.2):
+        self.data_turn = self.data_turn * (1 - alpha_t) + alpha_t * turn
 
 wheels = Wheels()
 wheels.start()
@@ -161,8 +167,8 @@ try:
 
             #checksum
             if reduce(lambda x, y: x ^ y, values[:-1]) == values[-1]:
-                wheels.data_turn = values[0]
-                wheels.data_speed = values[1]
+                wheels.set_turn(values[0])
+                wheels.set_speed(values[1])
 
                 values[4] = -values[4]
                 speed = .13
@@ -174,8 +180,13 @@ try:
                 print('corrupt data', values[-1])
         else:
             print('no data')
-            wheels.data_turn = 0
-            wheels.data_speed = 0
+            if abs(wheels.data_speed) > 100 or abs(wheels.data_turn) > 100:
+                wheels.set_turn(0, 0.4)
+                wheels.set_speed(0, 0.4)
+            else:
+                wheels.data_speed = 0
+                wheels.data_turn = 0
+                
         
         now = time.time()
 except:
