@@ -64,8 +64,8 @@ brecieve = ['cmd1', 'cmd2', 'speedR_meas', 'speedL_meas', 'batVoltage', 'boardTe
 class Wheels(Thread):
     def __init__(self):
         super(Wheels, self).__init__()
-        self.data_turn = 0
-        self.data_speed = 0
+        self._data_turn = 0
+        self._data_speed = 0
         self.time_log = 0
         self.control_update_msg = str.encode('info update:', 'ascii')
 
@@ -130,10 +130,20 @@ class Wheels(Thread):
             logging.getLogger('daemon').exception('Exit due to:')
             sys.exit()
     
-    def set_speed(self, speed, alpha_s=0.2):
-        self.data_speed = self.data_speed * (1 - alpha_s) + alpha_s * speed
+    @property
+    def data_speed(self):
+        return self._data_speed
+
+    @data_speed.setter
+    def data_speed(self, speed, alpha_s=0.2):
+        self._data_speed = self.data_speed * (1 - alpha_s) + alpha_s * speed
     
-    def set_turn(self, turn, alpha_t=0.2):
+    @property
+    def data_turn(self):
+        return self._data_turn
+
+    @data_turn.setter
+    def data_turn(self, turn, alpha_t=0.2):
         self.data_turn = self.data_turn * (1 - alpha_t) + alpha_t * turn
 
 wheels = Wheels()
@@ -167,8 +177,8 @@ try:
 
             #checksum
             if reduce(lambda x, y: x ^ y, values[:-1]) == values[-1]:
-                wheels.set_turn(values[0])
-                wheels.set_speed(values[1])
+                wheels.data_turn = values[0]
+                wheels.data_speed = values[1]
 
                 values[4] = -values[4]
                 speed = .13
@@ -181,11 +191,11 @@ try:
         else:
             print('no data')
             if abs(wheels.data_speed) > 100 or abs(wheels.data_turn) > 100:
-                wheels.set_turn(0, 0.4)
-                wheels.set_speed(0, 0.4)
+                wheels.data_turn = (0, 0.4)
+                wheels.data_speed = (0, 0.4)
             else:
-                wheels.data_speed = 0
-                wheels.data_turn = 0
+                wheels._data_speed = 0
+                wheels._data_turn = 0
                 
         
         now = time.time()
