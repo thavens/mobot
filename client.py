@@ -131,7 +131,7 @@ class Wheels(Thread):
             sys.exit()
     
     @property
-    def data_speed(self):
+    def data_speed(self) -> int:
         return self._data_speed
 
     @data_speed.setter
@@ -139,7 +139,7 @@ class Wheels(Thread):
         self._data_speed = self.data_speed * (1 - alpha_s) + alpha_s * speed
     
     @property
-    def data_turn(self):
+    def data_turn(self) -> int:
         return self._data_turn
 
     @data_turn.setter
@@ -194,8 +194,8 @@ try:
                 wheels.data_turn = (0, 0.4)
                 wheels.data_speed = (0, 0.4)
             else:
-                wheels._data_speed = 0
-                wheels._data_turn = 0
+                wheels.data_speed = (0, 1)
+                wheels.data_turn = (0, 1)
                 
         
         now = time.time()
