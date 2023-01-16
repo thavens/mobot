@@ -16,6 +16,7 @@ from options import DIRECT_SOCKET
 from video import video_listen, audio_listen
 from typing import Tuple
 import options
+import time
 
 DIRECT_SOCKET = options.DIRECT_SOCKET
 VIDEO = options.VIDEO
@@ -48,7 +49,11 @@ class ServerConnection(Thread):
         while True:
             msg = reduce(lambda x, y: x + y, self.contr.bytes()) \
             + (reduce(lambda x, y: x ^ y, self.contr)).to_bytes(2, 'little', signed=True)
-            self.udp.sendto(msg, self.addy.address)
+            try:
+                self.udp.sendto(msg, self.addy.address)
+            except socket.error as e:
+                print(f"Socket error {e}, Retrying in 5 seconds")
+                time.sleep(2)
             clock.tick(60)
             
 
