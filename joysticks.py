@@ -3,8 +3,14 @@ import threading
 import math
 import options
 
-def clamp(input:float) -> int:
+def clamp(input: float) -> int:
     return int(input) if abs(input) < 1000 else int(math.copysign(1000, input))
+
+def deadband(input: float) -> float:
+    if input < options.JOY_DEADBAND and input > -options.JOY_DEADBAND:
+        return 0
+    else:
+        return (input - math.copysign(options.JOY_DEADBAND, input)) / (1 - options.JOY_DEADBAND)
 
 class Controller(threading.Thread):
     def __init__(self, id, *args, **kwargs):
@@ -17,7 +23,9 @@ class Controller(threading.Thread):
         clock = time.Clock()
         while 1:
             self.joy.init()
-            self.values = [clamp(self.joy.get_axis(i) * 1000 * options.SPEEDRATIO) for i in range(self.joy.get_numaxes())]
+            self.values = [self.joy.get_axis(i) for i in range(self.joy.get_numaxes())]
+            self.values = [deadband(i) for i in self.values]
+            self.values = [clamp(i * 1000 * options.SPEEDRATIO) for i in self.values]
             self.values[1] = -self.values[1]
             self.hat = self.joy.get_hat(0)
             self.joy.quit()

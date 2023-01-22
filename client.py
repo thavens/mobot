@@ -11,13 +11,13 @@ import sys
 import logging
 import os
 from serial.serialutil import SerialException
+import math
 
 from video import video_send, audio_send
 import options
 
 VIDEO = options.VIDEO # Use webcam? Identical option in control.py
-
-print(os.environ['FORWARDING_SERVER'])
+    
 if VIDEO:
     try:
         os.popen('sudo pigpiod')
@@ -30,7 +30,7 @@ import math
 hole_time = 1 #seconds
 keep_alive = "client keep alive"
 msg_bytes = str.encode(keep_alive, 'ascii')
-serveraddy = (os.getenv('FORWARDING_SERVER'), 25565)
+serveraddy = ('127.0.0.1', 25565) if options.DIRECT_SOCKET else (os.getenv('FORWARDING_SERVER'), 25565)
 buffSize = 1024
 #####################################
 
@@ -42,7 +42,7 @@ log_interval = 10
 
 ######### Logger Options ############
 logging.basicConfig(filename='client_daemon_log.txt',
-                    filemode='a',
+                    filemode='w',
                     format='%(asctime)s,%(msecs)d %(name)s %(levelname)s> %(message)s',
                     datefmt='%H:%M:%S',
                     level=logging.NOTSET)
@@ -98,18 +98,16 @@ class Wheels(Thread):
                 int.from_bytes(data[12:14], 'little', signed=True),
                 int.from_bytes(data[14:16], 'little', signed=False)]
                 checksum = int.from_bytes(data[16:18], 'little', signed=False)
-
-                if reduce(lambda x, y: x ^ y, incoming) == checksum:
+                if reduce(lambda x, y: x ^ y, incoming) & 0xFFFF == checksum:
+                    self.propogate(data)
                     if incoming[5] == 30:
                         logging.getLogger('daemon').info('Low Battery Exit')
-                        self.propogate(data)
                         sys.exit()
                     if self.time_log < (now := time.time()):
                         self.time_log = now + log_interval
                         logging.getLogger('daemon').info(
                             ' '.join([i + ': ' + str(j) for i, j in zip(brecieve, incoming[1:])])
                         )
-                        self.propogate(data)
 
     def propogate(self, data):
         global udp
@@ -126,25 +124,36 @@ class Wheels(Thread):
                 if itime_send < now:
                     itime_send = now + TIME_SEND
                     self.send()
+                time.sleep(0.0001)
         except:
             logging.getLogger('daemon').exception('Exit due to:')
             sys.exit()
+        
+    def full_stop(self):
+        while math.isclose(self.data_speed, 0) and math.isclose(self.data_turn, 0):
+            if abs(self.data_speed) > 100 or abs(self.data_turn) > 100:
+                self._data_turn *= 0.1
+                self._data_speed *= 0.1
+            else:
+                self._data_speed = 0
+                self._data_turn = 0
+            time.sleep(0.1)
     
     @property
     def data_speed(self) -> int:
-        return self._data_speed
+        return int(self._data_speed)
 
     @data_speed.setter
     def data_speed(self, speed, alpha_s=0.2):
-        self._data_speed = self.data_speed * (1 - alpha_s) + alpha_s * speed
+        self._data_speed = self._data_speed * (1 - alpha_s) + alpha_s * speed
     
     @property
     def data_turn(self) -> int:
-        return self._data_turn
+        return int(self._data_turn)
 
     @data_turn.setter
     def data_turn(self, turn, alpha_t=0.2):
-        self.data_turn = self.data_turn * (1 - alpha_t) + alpha_t * turn
+        self._data_turn = self._data_turn * (1 - alpha_t) + alpha_t * turn
 
 wheels = Wheels()
 wheels.start()
@@ -157,15 +166,22 @@ if VIDEO:
     syaw.value = 0
     spitch.value = 0
 
-if VIDEO:
     vsend = video_send()
     asend = audio_send()
 
 try:
     while True:
         if future <= now:
-            udp.sendto(msg_bytes, serveraddy)
-            future = now + hole_time
+            try:
+                udp.sendto(msg_bytes, serveraddy)
+                future = now + hole_time
+            except socket.error as e:
+                print(f"Initiating emergency stop due to {e}!")
+                logging.getLogger("socket").info(f"Initiating emergency stop due to {e}!")
+                wheels.full_stop()
+                print(f"Socket error {e}, Retrying in 3 seconds")
+                logging.getLogger("socket").info(f"Socket error {e}, Retrying in 3 seconds")
+                time.sleep(3)
         
         ready_sockets, _, _ = select.select(
             [udp], [], [], hole_time
@@ -190,18 +206,12 @@ try:
                 print('corrupt data', values[-1])
         else:
             print('no data')
-            if abs(wheels.data_speed) > 100 or abs(wheels.data_turn) > 100:
-                wheels.data_turn = (0, 0.4)
-                wheels.data_speed = (0, 0.4)
-            else:
-                wheels.data_speed = (0, 1)
-                wheels.data_turn = (0, 1)
-                
-        
+            logging.getLogger('socket').info("Initiating emergency stop due to no data!")
+            wheels.full_stop()
+            
         now = time.time()
 except:
-    wheels.data_turn = 0
-    wheels.data_speed = 0
+    wheels.full_stop()
     if VIDEO:
         vsend.terminate()
         asend.terminate()

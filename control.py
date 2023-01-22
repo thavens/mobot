@@ -52,8 +52,8 @@ class ServerConnection(Thread):
             try:
                 self.udp.sendto(msg, self.addy.address)
             except socket.error as e:
-                print(f"Socket error {e}, Retrying in 5 seconds")
-                time.sleep(2)
+                print(f"Socket error {e}, Retrying in 3 seconds")
+                time.sleep(3)
             clock.tick(60)
             
 
@@ -83,8 +83,9 @@ class ControlListener(Thread):
                 int.from_bytes(data[12:14], 'little', signed=True),
                 int.from_bytes(data[14:16], 'little', signed=False)]
                 checksum = int.from_bytes(data[16:18], 'little', signed=False)
-                if reduce(lambda x, y: x ^ y, incoming) == checksum:
+                if reduce(lambda x, y: x ^ y, incoming) & 0xFFFF == checksum:
                     self.data = incoming[1:]
+                    self.data[2] = -self.data[2]
                 else:
                     print('got corrupt data from client/forwarding server.')
     
@@ -96,7 +97,7 @@ class Display:
         self.BLACK = (0, 0, 0)
         self.WHITE = (200, 200, 200)
         pygame.init()
-        self.screen = pygame.display.set_mode((640, 240))
+        self.screen = pygame.display.set_mode((320, 420))
         self.font = pygame.font.SysFont('ubuntumono', 20)
         self.running = True
         self.x = 20
@@ -141,11 +142,11 @@ try:
     while display.running:
         display.reset()
         display.writeLine(input_label)
-        display.writeLine(', '.join(f'{i}'.rjust(6) for i in ['turn', 'speed', 'N/A', 'N/A', 'Yaw', 'Pitch']))
-        display.writeLine(', '.join(f'{i}'.rjust(6) for i in contr))
+        for i, j in zip(['turn', 'speed', 'N/A', 'N/A', 'Yaw', 'Pitch'], contr):
+            display.writeLine(f'\t{i}: {j}')
         display.writeLine(robot_data_label)
-        display.writeLine(', '.join(f'{i}'.rjust(6) for i in ['cmd1', 'cmd2', 'speedR_meas', 'speedL_meas', 'batVoltage', 'boardTemp']))
-        display.writeLine(', '.join(f'{i}'.rjust(6) for i in listener.data))
+        for i, j in zip(['cmd1', 'cmd2', 'speedR_meas', 'speedL_meas', 'batVoltage', 'boardTemp'], listener.data):
+            display.writeLine(f'\t{i}: {j}')
         display.update()
 
         if not contr.is_alive():
