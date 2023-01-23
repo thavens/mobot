@@ -74,8 +74,11 @@ class Wheels(Thread):
             try:
                 self.tty = serial.Serial('/dev/ttyUSB0', baudrate=115200, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE)
                 failed = 0
-            except SerialException:
+            except SerialException as e:
                 print('serial connection retry in 5s')
+                print(f'{e}')
+                logging.getLogger('Wheels') \
+                    .exception(f'serial connection retry in 5s\n{e}')
                 time.sleep(5)
 
     def send(self):
@@ -137,23 +140,23 @@ class Wheels(Thread):
             else:
                 self._data_speed = 0
                 self._data_turn = 0
-            time.sleep(0.1)
+            time.sleep(0.2)
     
     @property
     def data_speed(self) -> int:
         return int(self._data_speed)
 
     @data_speed.setter
-    def data_speed(self, speed, alpha_s=0.2):
-        self._data_speed = self._data_speed * (1 - alpha_s) + alpha_s * speed
+    def data_speed(self, speed):
+        self._data_speed = speed
     
     @property
     def data_turn(self) -> int:
         return int(self._data_turn)
 
     @data_turn.setter
-    def data_turn(self, turn, alpha_t=0.2):
-        self._data_turn = self._data_turn * (1 - alpha_t) + alpha_t * turn
+    def data_turn(self, turn):
+        self._data_turn = turn
 
 wheels = Wheels()
 wheels.start()
