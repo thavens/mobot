@@ -133,14 +133,14 @@ class Wheels(Thread):
             sys.exit()
         
     def full_stop(self):
-        while math.isclose(self.data_speed, 0) and math.isclose(self.data_turn, 0):
-            if abs(self.data_speed) > 100 or abs(self.data_turn) > 100:
-                self._data_turn *= 0.1
-                self._data_speed *= 0.1
+        while not (math.isclose(self.data_speed, 0) and math.isclose(self.data_turn, 0)):
+            if abs(self.data_speed) > 50 or abs(self.data_turn) > 50:
+                self._data_turn -= math.copysign(50, self._data_turn)
+                self._data_speed -= math.copysign(50, self._data_turn)
             else:
                 self._data_speed = 0
                 self._data_turn = 0
-            time.sleep(0.2)
+            time.sleep(0.1)
     
     @property
     def data_speed(self) -> int:
@@ -199,7 +199,6 @@ try:
                 wheels.data_turn = values[0]
                 wheels.data_speed = values[1]
 
-                values[4] = -values[4]
                 speed = .13
                 if VIDEO:
                     syaw.value = syaw.value + values[4] * speed if abs(syaw.value + values[4] * speed) <= 1 else values[4]

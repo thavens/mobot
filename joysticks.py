@@ -12,6 +12,9 @@ def deadband(input: float) -> float:
     else:
         return (input - math.copysign(options.JOY_DEADBAND, input)) / (1 - options.JOY_DEADBAND)
 
+def active_steering(turn, speed):
+    return turn / (0.03 * math.abs(speed) + 1)
+
 class Controller(threading.Thread):
     def __init__(self, id, *args, **kwargs):
         super(Controller, self).__init__(*args, **kwargs)
@@ -26,8 +29,10 @@ class Controller(threading.Thread):
             self.values = [self.joy.get_axis(i) for i in range(self.joy.get_numaxes())]
             self.values = [deadband(i) for i in self.values]
             self.values = [clamp(i * 1000 * options.SPEEDRATIO) for i in self.values]
+            self.values[0] = active_steering(self.values[0], self.values[1]) # axis 0, 1 are turn, speed respectively
             self.values[1] = -self.values[1]
             self.hat = self.joy.get_hat(0)
+            self.hat[0] = -self.hat[0]
             self.joy.quit()
             clock.tick(60)
     
