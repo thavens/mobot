@@ -192,10 +192,13 @@ try:
 
         if ready_sockets:
             msgServer = udp.recv(buffSize)
-            values = [int.from_bytes(msgServer[i:i+2], 'little', signed=True) for i in range(0, len(msgServer), 2)]
+            header = msgServer[0:len(options.CONTROL_HEADER)] if len(msgServer) > options.CONTROL_HEADER else None
+            if header:
+                msgServer = msgServer[len(options.CONTROL_HEADER):]
+                values = [int.from_bytes(msgServer[i:i+2], 'little', signed=True) for i in range(0, len(msgServer), 2)]
 
             #checksum
-            if reduce(lambda x, y: x ^ y, values[:-1]) == values[-1]:
+            if header and reduce(lambda x, y: x ^ y, values[:-1]) == values[-1]:
                 wheels.data_turn = values[0]
                 wheels.data_speed = values[1]
 
