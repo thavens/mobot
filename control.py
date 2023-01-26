@@ -50,7 +50,7 @@ class ServerConnection(Thread):
             msg = reduce(lambda x, y: x + y, self.contr.bytes()) \
             + (reduce(lambda x, y: x ^ y, self.contr)).to_bytes(2, 'little', signed=True)
             try:
-                self.udp.sendto(msg, self.addy.address)
+                self.udp.sendto(options.CONTROL_HEADER + msg, self.addy.address)
             except socket.error as e:
                 print(f"Socket error {e}, Retrying in 3 seconds")
                 time.sleep(3)
