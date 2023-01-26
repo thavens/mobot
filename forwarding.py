@@ -16,7 +16,6 @@ logging.info('Starting up')
 
 ################################ Socket Setup #############################
 client_msg_bytes = str.encode("client keep alive", 'ascii')
-control_msg_bytes = str.encode("control keep alive", 'ascii')
 propogate_msg_bytes = str.encode('info update:', 'ascii')
 
 
@@ -56,12 +55,9 @@ while True:
         if bytes == client_msg_bytes:
             if client_address != addy: print('new client address', addy)
             client_address = addy
-        elif bytes == control_msg_bytes:
-            if control_address != addy: print('new control address', addy)
-            control_address = addy
         elif len(bytes) > len(propogate_msg_bytes) and bytes[:len(propogate_msg_bytes)] == propogate_msg_bytes:
             server.sendto(bytes, control_address)
-        else:
+        elif len(bytes) > len(options.CONTROL_HEADER) and bytes[:len(options.CONTROL_HEADER)] == options.CONTROL_HEADER:
             if control_address != addy: print('new control address', addy)
             control_address = addy
             server.sendto(bytes, client_address)
