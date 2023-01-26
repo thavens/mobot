@@ -26,19 +26,6 @@ if VIDEO:
         pass
     from gpiozero import Servo
 import math
-############ Client Options #########
-hole_time = 1 #seconds
-keep_alive = "client keep alive"
-msg_bytes = str.encode(keep_alive, 'ascii')
-serveraddy = ('127.0.0.1', 25565) if options.DIRECT_SOCKET else (os.getenv('FORWARDING_SERVER'), 25565)
-buffSize = 1024
-#####################################
-
-######### Daemon Options ############
-START_FRAME = 0xABCD
-TIME_SEND = 0.05
-log_interval = 10
-#####################################
 
 ######### Logger Options ############
 logging.basicConfig(filename='client_daemon_log.txt',
@@ -47,6 +34,29 @@ logging.basicConfig(filename='client_daemon_log.txt',
                     datefmt='%H:%M:%S',
                     level=logging.NOTSET)
 logging.info('Starting up')
+#####################################
+
+############ Client Options #########
+hole_time = 1 #seconds
+keep_alive = "client keep alive"
+msg_bytes = str.encode(keep_alive, 'ascii')
+if host := os.getenv('FORWARDING_HOST'):
+    host = socket.gethostbyname(host)
+    serveraddy = (host, 25565)
+elif host := os.getenv('FORWARDING_SERVER'):
+    serveraddy = (os.getenv('FORWARDING_SERVER'), 25565)
+elif options.DIRECT_SOCKET:
+    serveraddy = ('127.0.0.1', 25565)
+else:
+    logging.getLogger('Options').critical('Missing FORWARDING_HOST, or FORWARDING_SERVER env variable or direct socket option')
+    raise Exception('Missing FORWARDING_HOST, or FORWARDING_SERVER env variable or direct socket option')
+buffSize = 1024
+#####################################
+
+######### Daemon Options ############
+START_FRAME = 0xABCD
+TIME_SEND = 0.05
+log_interval = 10
 #####################################
 
 

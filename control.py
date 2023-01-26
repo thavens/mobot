@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 import math
-
 import threading
 from threading import Thread
 import pygame
@@ -18,7 +17,7 @@ from typing import Tuple
 import options
 import time
 
-DIRECT_SOCKET = options.DIRECT_SOCKET
+options.DIRECT_SOCKET
 VIDEO = options.VIDEO
 
 @dataclass
@@ -30,11 +29,21 @@ class Addy(threading.Event):
         self.address = addy
 
 
-if not DIRECT_SOCKET:
-    addy = Addy((os.getenv('FORWARDING_SERVER'), 25565)) # forwarding server address
+if host := os.getenv('FORWARDING_HOST'):
+    host = socket.gethostbyname(host)
+    serveraddy = (host, 25565)
+    addy = Addy((host, 25565)) # forwarding server address
     addy.set()
-else:
+elif host := os.getenv('FORWARDING_SERVER'):
+    addy = Addy((host, 25565)) # forwarding server address
+    addy.set()
+    serveraddy = (os.getenv('FORWARDING_SERVER'), 25565)
+elif options.DIRECT_SOCKET:
     addy = Addy(None)
+else:
+    raise Exception('Missing FORWARDING_HOST, or FORWARDING_SERVER env variable or direct socket option')
+    
+    
 
 class ServerConnection(Thread):
     def __init__(self, controller, addy:Addy, udp:socket.socket):
