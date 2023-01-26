@@ -158,7 +158,10 @@ class Wheels(Thread):
 
     @data_speed.setter
     def data_speed(self, speed):
-        self._data_speed = speed
+        if abs(speed - self._data_speed) > options.ACCEL_MAX:
+            self._data_speed += options.ACCEL_MAX
+        else:
+            self._data_speed = speed
     
     @property
     def data_turn(self) -> int:
@@ -166,7 +169,10 @@ class Wheels(Thread):
 
     @data_turn.setter
     def data_turn(self, turn):
-        self._data_turn = turn
+        if abs(turn - self._data_turn) > options.ACCEL_MAX:
+            self._data_turn += options.ACCEL_MAX
+        else:
+            self._data_turn = turn
 
 wheels = Wheels()
 wheels.start()

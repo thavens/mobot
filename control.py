@@ -94,7 +94,12 @@ class ControlListener(Thread):
                 checksum = int.from_bytes(data[16:18], 'little', signed=False)
                 if reduce(lambda x, y: x ^ y, incoming) & 0xFFFF == checksum:
                     self.data = incoming[1:]
+                    # self data: ['cmd1', 'cmd2', 'speedR_meas', 'speedL_meas', 'batVoltage', 'boardTemp']
                     self.data[2] = -self.data[2]
+                    self.data[2] = f'{self.data[2]} RPM -> {self.data[2] * math.pi / 30 * options.WHEEL_RADIUS} m/s'
+                    self.data[3] = f'{self.data[3]} RPM -> {self.data[3] * math.pi / 30 * options.WHEEL_RADIUS} m/s'
+                    self.data[4] = self.data[4] / 100
+                    self.data[5] = self.data[5] / 10
                 else:
                     print('got corrupt data from client/forwarding server.')
     
@@ -134,7 +139,7 @@ contr = get_controller()
 udp = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM, proto=socket.IPPROTO_UDP)
 udp.bind(("0.0.0.0", 25565))
 
-# insantiate the listening thread
+# instantiate the listening thread
 listener = ControlListener(addy, udp)
 serv = ServerConnection(contr, addy, udp)
 # start the listening thread
