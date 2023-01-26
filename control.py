@@ -96,8 +96,8 @@ class ControlListener(Thread):
                     self.data = incoming[1:]
                     # self data: ['cmd1', 'cmd2', 'speedR_meas', 'speedL_meas', 'batVoltage', 'boardTemp']
                     self.data[2] = -self.data[2]
-                    self.data[2] = f'{self.data[2]} RPM -> {self.data[2] * math.pi / 30 * options.WHEEL_RADIUS} m/s'
-                    self.data[3] = f'{self.data[3]} RPM -> {self.data[3] * math.pi / 30 * options.WHEEL_RADIUS} m/s'
+                    self.data[2] = f'{self.data[2]:4d} RPM -> {self.data[2] * math.pi / 30 * options.WHEEL_RADIUS:6.2f} m/s'
+                    self.data[3] = f'{self.data[3]:4d} RPM -> {self.data[3] * math.pi / 30 * options.WHEEL_RADIUS:6.2f} m/s'
                     self.data[4] = self.data[4] / 100
                     self.data[5] = self.data[5] / 10
                 else:
@@ -111,7 +111,7 @@ class Display:
         self.BLACK = (0, 0, 0)
         self.WHITE = (200, 200, 200)
         pygame.init()
-        self.screen = pygame.display.set_mode((320, 420))
+        self.screen = pygame.display.set_mode((420, 420))
         self.font = pygame.font.SysFont('ubuntumono', 20)
         self.running = True
         self.x = 20
