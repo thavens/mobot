@@ -192,7 +192,7 @@ try:
 
         if ready_sockets:
             msgServer = udp.recv(buffSize)
-            header = msgServer[0:len(options.CONTROL_HEADER)] if len(msgServer) > options.CONTROL_HEADER else None
+            header = msgServer[0:len(options.CONTROL_HEADER)] if len(msgServer) > len(options.CONTROL_HEADER) else None
             if header:
                 msgServer = msgServer[len(options.CONTROL_HEADER):]
                 values = [int.from_bytes(msgServer[i:i+2], 'little', signed=True) for i in range(0, len(msgServer), 2)]
