@@ -4,8 +4,8 @@ SPEEDRATIO = 0.25 #0.48 # cap max speed 0-1
 JOY_DEADBAND = 50 / 1000 # joystick threshold for zero
 CONTROL_HEADER = 'con:'.encode('ascii')
 WHEEL_RADIUS = 6.5 / 2 # inches
-ACCEL_MAX = 6 # m/s^2
-ALPHA_MAX = 1 # rad/s
+ACCEL_MAX = 4 # m/s^2
+ALPHA_MAX = 2 # rad/s
 CONTROL_SEND_FREQ = 60
 BOARD_WIDTH = 18 # in
 
