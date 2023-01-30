@@ -154,7 +154,7 @@ class IMU:
             use_calibration (bool, optional): Use calibration file; only false for generating calibration file. Defaults to True.
     """
     
-    def __self__(self, gyro_sens: int, accel_sens: int, use_calibration: bool=True):
+    def __init__(self, gyro_sens: int, accel_sens: int, use_calibration: bool=True):
         self.bus = smbus.SMBus(DEVICE_BUS)
         self.bus.write_byte_data(DEVICE_ADDR, reg["PWR_MGMT_1"], clk_sel)
         self.bus.write_byte_data(DEVICE_ADDR, reg["GYRO_CONFIG"], FS_SEL[gyro_sens])
@@ -163,7 +163,7 @@ class IMU:
         self._afs_sel = LSB_SENS[accel_sens]
         
         path = Path('calibration.txt')
-        self.calib = None
+        self.calib = IMUPoint(*([0] * 7))
         self.stats = None
         if path.exists():
             with open(path, 'r') as f:
@@ -171,19 +171,16 @@ class IMU:
                 if len(lines) > 1:
                     self.calib = IMUPoint(*[float(i) for i in lines[1].split(',')])
         
-    def imudata(self):
+    def imudata(self) -> IMUPoint:
         data = self.bus.read_i2c_block_data(DEVICE_ADDR, reg["ACCEL_XOUT_H"], 14)
         data = [int.from_bytes(data[i:i+2], 'big', signed=True) for i in range(0, len(data), 2)]
         data[0:3] = [i / self._afs_sel for i in data[0:3]]
         data[3] = temp_deg(data[3])
         data[4:8] = [i / self._fs_sel for i in data[4:8]]
-        data = IMUPoint(*data)
-        if self.calib:
-            data -= self.calib
-        return data
+        return IMUPoint(*data) - self.calib
 
 if __name__ == "__main__":
-    imu = IMU(250, 2)
+    imu = IMU(500, 16)
     n = 10000
     accum = IMUPoint(*[0] * 7)
     for i in range(n):

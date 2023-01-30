@@ -13,7 +13,7 @@ def deadband(input: float) -> float:
         return (input - math.copysign(options.JOY_DEADBAND, input)) / (1 - options.JOY_DEADBAND)
 
 def active_steering(turn, speed):
-    return turn / (0.03 * abs(speed) + 1)
+    return turn / (0.1 * abs(speed) + 1)
 
 class Controller(threading.Thread):
     def __init__(self, id, *args, **kwargs):

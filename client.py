@@ -158,8 +158,15 @@ class Wheels(Thread):
 
     @data_speed.setter
     def data_speed(self, speed):
-        if abs(speed - self._data_speed) > options.ACCEL_MAX:
-            self._data_speed += options.ACCEL_MAX
+        """We get the accel max as rpm/s while we get CONTROL_FREQ count update calls to the function.
+        This means we can update by only 1/FREQ max rather than the raw rpm/s.
+
+        Args:
+            speed (int | float): The next requested speed as rpm
+        """
+        limit = options.ACCEL_MAX / options.CONTROL_SEND_FREQ
+        if abs(speed - self._data_speed) > limit:
+            self._data_speed += math.copysign(limit, speed - self._data_speed)
         else:
             self._data_speed = speed
     
@@ -169,8 +176,14 @@ class Wheels(Thread):
 
     @data_turn.setter
     def data_turn(self, turn):
-        if abs(turn - self._data_turn) > options.ACCEL_MAX:
-            self._data_turn += options.ACCEL_MAX
+        """Average velocity remains as the speed value, set by speed setter.
+        ALPHA_MAX is rpm/s so the same division by freq needs to occur to set the values right.
+        Args:
+            turn (int | float): The speed differential set between the wheels.  
+        """
+        limit = options.ALPHA_MAX / options.CONTROL_SEND_FREQ
+        if abs(turn - self._data_turn) > limit:
+            self._data_turn += math.copysign(limit, turn - self._data_turn)
         else:
             self._data_turn = turn
 

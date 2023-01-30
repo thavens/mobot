@@ -63,7 +63,7 @@ class ServerConnection(Thread):
             except socket.error as e:
                 print(f"Socket error {e}, Retrying in 3 seconds")
                 time.sleep(3)
-            clock.tick(60)
+            clock.tick(options.CONTROL_SEND_FREQ)
             
 
 @dataclass

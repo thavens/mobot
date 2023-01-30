@@ -7,6 +7,7 @@ name = "pypi"
 pyps4controller = "*"
 pygame = "*"
 pyserial = "*"
+numpy = "*"
 
 [dev-packages]
 
