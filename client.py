@@ -41,7 +41,13 @@ hole_time = 1 #seconds
 keep_alive = "client keep alive"
 msg_bytes = str.encode(keep_alive, 'ascii')
 if host := os.getenv('FORWARDING_HOST'):
-    host = socket.gethostbyname(host)
+    while 1:
+        try:
+            host = socket.gethostbyname(host)
+            break
+        except socket.gaierror as e:
+            logging.getLogger('socket').debug('unable to get host by name, typically due to networking not up yet? sleep 5 sec')
+            time.sleep(5)
     serveraddy = (host, 25565)
 elif host := os.getenv('FORWARDING_SERVER'):
     serveraddy = (os.getenv('FORWARDING_SERVER'), 25565)
@@ -59,10 +65,20 @@ TIME_SEND = 0.05
 log_interval = 10
 #####################################
 
-
-udp = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM, proto=socket.IPPROTO_UDP)
-udp.bind(('0.0.0.0', 25566))
-udp.setblocking(False)
+while 1:
+    try:
+        udp = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM, proto=socket.IPPROTO_UDP)
+        udp.bind(('0.0.0.0', 25566))
+        udp.setblocking(False)
+        break
+    except:
+        try:
+            udp.close()
+        except:
+            pass
+        logging.getLogger('socket').debug('Could not open socket, trying again in 5 sec.')
+        time.sleep(5)
+logging.getLogger('socket').debug('Socket creation complete.')
 
 now = time.time()
 future = now
@@ -79,12 +95,11 @@ class Wheels(Thread):
         self.time_log = 0
         self.control_update_msg = str.encode('info update:', 'ascii')
 
-        failed = 1
-        while failed:
+        while 1:
             try:
                 self.tty = serial.Serial('/dev/ttyUSB0', baudrate=115200, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE)
-                failed = 0
-            except SerialException as e:
+                break
+            except (SerialException, BrokenPipeError) as e:
                 print('serial connection retry in 5s')
                 print(f'{e}')
                 logging.getLogger('Wheels') \
@@ -221,7 +236,7 @@ try:
 
         if ready_sockets:
             msgServer = udp.recv(buffSize)
-            header = msgServer[0:len(options.CONTROL_HEADER)] if len(msgServer) > options.CONTROL_HEADER else None
+            header = msgServer[0:len(options.CONTROL_HEADER)] if len(msgServer) > len(options.CONTROL_HEADER) else None
             if header:
                 msgServer = msgServer[len(options.CONTROL_HEADER):]
                 values = [int.from_bytes(msgServer[i:i+2], 'little', signed=True) for i in range(0, len(msgServer), 2)]
