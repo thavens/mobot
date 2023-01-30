@@ -94,6 +94,7 @@ class Wheels(Thread):
         self._data_speed = 0
         self.time_log = 0
         self.control_update_msg = str.encode('info update:', 'ascii')
+        self._data_set_time = time.time();
 
         while 1:
             try:
@@ -167,40 +168,38 @@ class Wheels(Thread):
                 self._data_turn = 0
             time.sleep(0.1)
     
-    @property
-    def data_speed(self) -> int:
-        return int(self._data_speed)
-
-    @data_speed.setter
-    def data_speed(self, speed):
-        """We get the accel max as rpm/s while we get CONTROL_FREQ count update calls to the function.
-        This means we can update by only 1/FREQ max rather than the raw rpm/s.
+    def data_set(self, speed, turn):
+        """We get the accel max and alpha max as rpm/s while we get dt between update calls to the function.
+        This means we can update by only accel/alpha * dt rather than the raw rpm/s.
+        
+        dt has a time limit of 1 sec to prevent jerk from latency spike
 
         Args:
             speed (int | float): The next requested speed as rpm
         """
-        limit = options.ACCEL_MAX / options.CONTROL_SEND_FREQ
+        dt = time.time() - self._data_set_time
+        dt = 1 if dt > 1 else dt
+        limit = options.ACCEL_MAX * dt
         if abs(speed - self._data_speed) > limit:
             self._data_speed += math.copysign(limit, speed - self._data_speed)
         else:
             self._data_speed = speed
+        
+        limit = options.ALPHA_MAX * dt
+        if abs(turn - self._data_turn) > limit:
+            self._data_turn += math.copysign(limit, turn - self._data_turn)
+        else:
+            self._data_turn = turn
+        self._data_set_time = time.time()
     
     @property
     def data_turn(self) -> int:
         return int(self._data_turn)
 
-    @data_turn.setter
-    def data_turn(self, turn):
-        """Average velocity remains as the speed value, set by speed setter.
-        ALPHA_MAX is rpm/s so the same division by freq needs to occur to set the values right.
-        Args:
-            turn (int | float): The speed differential set between the wheels.  
-        """
-        limit = options.ALPHA_MAX / options.CONTROL_SEND_FREQ
-        if abs(turn - self._data_turn) > limit:
-            self._data_turn += math.copysign(limit, turn - self._data_turn)
-        else:
-            self._data_turn = turn
+    @property
+    def data_speed(self) -> int:
+        return int(self._data_speed)
+        
 
 wheels = Wheels()
 wheels.start()
@@ -223,11 +222,9 @@ try:
                 udp.sendto(msg_bytes, serveraddy)
                 future = now + hole_time
             except socket.error as e:
-                print(f"Initiating emergency stop due to {e}!")
-                logging.getLogger("socket").info(f"Initiating emergency stop due to {e}!")
-                wheels.full_stop()
                 print(f"Socket error {e}, Retrying in 3 seconds")
                 logging.getLogger("socket").info(f"Socket error {e}, Retrying in 3 seconds")
+                wheels.full_stop()
                 time.sleep(3)
         
         ready_sockets, _, _ = select.select(
@@ -243,8 +240,7 @@ try:
 
             #checksum
             if header and reduce(lambda x, y: x ^ y, values[:-1]) == values[-1]:
-                wheels.data_turn = values[0]
-                wheels.data_speed = values[1]
+                wheels.data_set(values[1], values[0])
 
                 speed = .13
                 if VIDEO:
@@ -257,7 +253,7 @@ try:
             print('no data')
             logging.getLogger('socket').info("Initiating emergency stop due to no data!")
             wheels.full_stop()
-            
+            time.sleep(3)
         now = time.time()
 except:
     wheels.full_stop()
